@@ -51,10 +51,6 @@ cursor:pointer;
 opacity:.8;
 }
 
-.refresh button:hover{
-opacity:1;
-}
-
 .refreshed{
 display:block;
 margin-top:4px;
@@ -79,7 +75,6 @@ border-bottom:1px solid var(--line);
 
 .label{
 text-align:center;
-color:#fff;
 font-family:Georgia,"Times New Roman",serif;
 font-size:21px;
 font-weight:600;
@@ -327,6 +322,7 @@ const artistName=document.getElementById("artistName");
 let player;
 let current=0;
 let ready=false;
+let switchTimer=null;
 
 function updateTrackInfo(){
 if(!player||!ready)return;
@@ -348,19 +344,25 @@ button.classList.toggle("active",i===current);
 function loadPlaylist(index){
 if(!ready)return;
 
+clearTimeout(switchTimer);
+
 current=index;
 
 title.textContent=playlists[index].title;
 trackName.textContent="Loading...";
 artistName.textContent="";
 
+renderActive();
+
+player.stopVideo();
+
+switchTimer=setTimeout(()=>{
 player.loadPlaylist({
 listType:"playlist",
 list:playlists[index].id,
 index:0
 });
-
-renderActive();
+},500);
 }
 
 playlists.forEach((playlist,index)=>{
@@ -390,17 +392,26 @@ const state=player.getPlayerState();
 
 if(state===YT.PlayerState.PLAYING){
 player.pauseVideo();
-}else{
-player.playVideo();
+return;
 }
+
+player.playVideo();
 });
 
 document.getElementById("previous").addEventListener("click",()=>{
-if(ready)player.previousVideo();
+if(!ready)return;
+
+player.previousVideo();
+
+setTimeout(updateTrackInfo,300);
 });
 
 document.getElementById("next").addEventListener("click",()=>{
-if(ready)player.nextVideo();
+if(!ready)return;
+
+player.nextVideo();
+
+setTimeout(updateTrackInfo,300);
 });
 
 function onYouTubeIframeAPIReady(){
@@ -415,14 +426,17 @@ autoplay:0
 events:{
 onReady:event=>{
 ready=true;
+
 event.target.cuePlaylist({
 listType:"playlist",
 list:playlists[0].id,
 index:0
 });
+
 renderActive();
-setTimeout(updateTrackInfo,250);
+setTimeout(updateTrackInfo,300);
 },
+
 onStateChange:event=>{
 const playing=event.data===YT.PlayerState.PLAYING;
 
@@ -437,7 +451,7 @@ event.data===YT.PlayerState.PLAYING||
 event.data===YT.PlayerState.PAUSED||
 event.data===YT.PlayerState.CUED
 ){
-setTimeout(updateTrackInfo,150);
+setTimeout(updateTrackInfo,200);
 }
 }
 }
