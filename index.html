@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Music</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+min-height:100vh;
+display:grid;
+place-items:center;
+background:#111;
+font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+color:#111;
+}
+
+.ipod{
+width:min(360px,92vw);
+padding:24px;
+background:#e8e8e8;
+border-radius:32px;
+box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+
+.screen{
+background:#dce5d2;
+border:4px solid #222;
+border-radius:8px;
+overflow:hidden;
+margin-bottom:24px;
+}
+
+.screen-header{
+display:flex;
+justify-content:space-between;
+padding:7px 10px;
+border-bottom:2px solid #222;
+font-size:13px;
+font-weight:700;
+}
+
+.screen-content{
+padding:14px;
+min-height:110px;
+}
+
+.label{
+font-size:11px;
+text-transform:uppercase;
+letter-spacing:.08em;
+opacity:.6;
+}
+
+.playlist-title{
+margin:5px 0 4px;
+font-size:20px;
+font-weight:700;
+}
+
+.status{
+font-size:13px;
+opacity:.7;
+}
+
+.player{
+width:100%;
+aspect-ratio:16/9;
+border:0;
+display:block;
+margin-top:12px;
+}
+
+.wheel{
+width:210px;
+height:210px;
+margin:auto;
+border-radius:50%;
+background:#fff;
+position:relative;
+}
+
+.wheel button{
+position:absolute;
+border:0;
+background:none;
+font:inherit;
+font-weight:600;
+cursor:pointer;
+color:#777;
+}
+
+.menu{
+top:18px;
+left:50%;
+transform:translateX(-50%);
+font-size:12px;
+}
+
+.play{
+bottom:17px;
+left:50%;
+transform:translateX(-50%);
+font-size:20px;
+}
+
+.prev{
+left:20px;
+top:50%;
+transform:translateY(-50%);
+font-size:18px;
+}
+
+.next{
+right:20px;
+top:50%;
+transform:translateY(-50%);
+font-size:18px;
+}
+
+.center{
+position:absolute;
+width:85px;
+height:85px;
+border-radius:50%;
+background:#e8e8e8;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+}
+
+.playlist-list{
+display:none;
+padding:0;
+margin:0;
+list-style:none;
+}
+
+.playlist-list.active{
+display:block;
+}
+
+.playlist-list button{
+width:100%;
+padding:10px 8px;
+border:0;
+border-bottom:1px solid rgba(0,0,0,.15);
+background:none;
+text-align:left;
+font:inherit;
+cursor:pointer;
+}
+
+.playlist-list button:hover{
+background:rgba(0,0,0,.08);
+}
+</style>
+</head>
+
+<body>
+
+<main class="ipod">
+
+<section class="screen">
+<div class="screen-header">
+<span>Q Music</span>
+<span>♫</span>
+</div>
+
+<div class="screen-content">
+
+<div id="nowPlaying">
+<div class="label">Playlist</div>
+<div class="playlist-title" id="playlistTitle"></div>
+<div class="status">Powered by YouTube</div>
+
+<iframe
+id="player"
+class="player"
+title="YouTube playlist"
+allow="autoplay; encrypted-media"
+allowfullscreen>
+</iframe>
+</div>
+
+<ul class="playlist-list" id="playlistList"></ul>
+
+</div>
+</section>
+
+<div class="wheel">
+<button class="menu" id="menu">MENU</button>
+<button class="prev" aria-label="Previous">◀</button>
+<button class="next" aria-label="Next">▶</button>
+<button class="play" aria-label="Play">▶︎</button>
+<div class="center"></div>
+</div>
+
+</main>
+
+<script type="application/json" id="playlistData">
+{
+  "playlists":[
+    {
+      "title":"Blaze's Cool Mixtape",
+      "youtubePlaylistId":"PLauF-OVoaXM8",
+      "active":true
+    }
+  ]
+}
+</script>
+
+<script>
+const data=JSON.parse(document.getElementById("playlistData").textContent);
+const playlists=data.playlists.filter(p=>p.active);
+
+const title=document.getElementById("playlistTitle");
+const player=document.getElementById("player");
+const list=document.getElementById("playlistList");
+const nowPlaying=document.getElementById("nowPlaying");
+const menu=document.getElementById("menu");
+
+function loadPlaylist(p){
+title.textContent=p.title;
+player.src=`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(p.youtubePlaylistId)}`;
+list.classList.remove("active");
+nowPlaying.style.display="block";
+}
+
+playlists.forEach(p=>{
+const li=document.createElement("li");
+const button=document.createElement("button");
+button.textContent=p.title;
+button.addEventListener("click",()=>loadPlaylist(p));
+li.appendChild(button);
+list.appendChild(li);
+});
+
+menu.addEventListener("click",()=>{
+const open=list.classList.toggle("active");
+nowPlaying.style.display=open?"none":"block";
+});
+
+if(playlists.length)loadPlaylist(playlists[0]);
+</script>
+
+</body>
+</html>
