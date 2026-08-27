@@ -6,10 +6,8 @@
 <title>Music</title>
 
 <link rel="preconnect" href="https://www.youtube.com">
-<link rel="preconnect" href="https://www.google.com">
 <link rel="preconnect" href="https://i.ytimg.com">
 <link rel="dns-prefetch" href="//www.youtube.com">
-<link rel="dns-prefetch" href="//i.ytimg.com">
 
 <style>
 :root{
@@ -42,7 +40,6 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Aria
 position:absolute;
 top:16px;
 right:18px;
-z-index:2;
 text-align:right;
 }
 
@@ -60,8 +57,8 @@ opacity:.8;
 .refreshed{
 display:block;
 margin-top:4px;
-color:rgba(255,255,255,.45);
 font-size:9px;
+color:rgba(255,255,255,.45);
 }
 
 .deck{
@@ -89,10 +86,9 @@ animation:pulse 4s ease-in-out infinite;
 }
 
 .title{
-margin:7px 0 0;
+margin-top:7px;
 text-align:center;
 font-size:12px;
-font-weight:400;
 color:var(--muted);
 }
 
@@ -100,8 +96,8 @@ color:var(--muted);
 width:100%;
 aspect-ratio:16/9;
 margin-top:16px;
-border-radius:10px;
 overflow:hidden;
+border-radius:10px;
 background:#000;
 box-shadow:0 12px 30px rgba(0,0,0,.75);
 }
@@ -119,17 +115,16 @@ text-align:center;
 .track-name{
 font-size:14px;
 font-weight:600;
-line-height:1.35;
 white-space:nowrap;
 overflow:hidden;
 text-overflow:ellipsis;
 }
 
 .artist-name{
+min-height:14px;
 margin-top:3px;
 font-size:11px;
 color:var(--muted);
-min-height:14px;
 }
 
 .controls{
@@ -151,12 +146,12 @@ color:#fff;
 font-size:20px;
 }
 
-.control:first-child{
+#previous{
 justify-self:end;
 margin-right:30px;
 }
 
-.control:last-child{
+#next{
 justify-self:start;
 margin-left:30px;
 }
@@ -215,13 +210,11 @@ height:44px;
 display:flex;
 align-items:center;
 justify-content:center;
-padding:8px;
 border:0;
 border-top:1px solid var(--line);
 background:none;
 color:#fff;
 font-size:12px;
-text-align:center;
 cursor:pointer;
 }
 
@@ -300,43 +293,38 @@ color:var(--accent);
 </script>
 
 <script>
-const refreshed=new Date();
+const $=id=>document.getElementById(id);
 
-document.getElementById("refreshed").textContent=
-"Last refreshed "+refreshed.toLocaleString([],{
+const playlists=JSON.parse(
+$("playlistData").textContent
+).playlists.filter(p=>p.active);
+
+const title=$("title");
+const trackName=$("trackName");
+const artistName=$("artistName");
+const playButton=$("play");
+const list=$("playlistList");
+const wrap=$("playlistWrap");
+const toggle=$("libraryToggle");
+
+let player;
+let ready=false;
+let current=0;
+let switchTimer;
+
+const now=new Date();
+
+$("refreshed").textContent=
+"Last refreshed "+now.toLocaleString([],{
 month:"short",
 day:"numeric",
 hour:"numeric",
 minute:"2-digit"
 });
 
-document.getElementById("refresh").onclick=()=>location.reload();
+$("refresh").onclick=()=>location.reload();
 
-const playlists=JSON.parse(
-document.getElementById("playlistData").textContent
-).playlists.filter(p=>p.active);
-
-const title=document.getElementById("title");
-const list=document.getElementById("playlistList");
-const playButton=document.getElementById("play");
-const toggle=document.getElementById("libraryToggle");
-const wrap=document.getElementById("playlistWrap");
-const trackName=document.getElementById("trackName");
-const artistName=document.getElementById("artistName");
-
-let player;
-let ready=false;
-let current=0;
-let switchTimer;
-let metadataTimer;
-
-function renderActive(){
-[...list.children].forEach((button,i)=>{
-button.classList.toggle("active",i===current);
-});
-}
-
-function updateTrackInfo(){
+function updateTrack(){
 if(!ready)return;
 
 const data=player.getVideoData();
@@ -347,13 +335,14 @@ trackName.textContent=data.title;
 artistName.textContent=data.author||"";
 }
 
-function scheduleTrackInfo(delay=120){
-clearTimeout(metadataTimer);
-metadataTimer=setTimeout(updateTrackInfo,delay);
+function updateActive(){
+[...list.children].forEach((button,index)=>{
+button.classList.toggle("active",index===current);
+});
 }
 
-function loadPlaylist(index){
-if(!ready)return;
+function switchPlaylist(index){
+if(!ready||index===current)return;
 
 clearTimeout(switchTimer);
 
@@ -362,7 +351,7 @@ title.textContent=playlists[index].title;
 trackName.textContent="Loading...";
 artistName.textContent="";
 
-renderActive();
+updateActive();
 player.stopVideo();
 
 switchTimer=setTimeout(()=>{
@@ -376,17 +365,20 @@ index:0
 
 playlists.forEach((playlist,index)=>{
 const button=document.createElement("button");
+
 button.className="playlist";
 button.textContent=playlist.title;
 
 button.onclick=()=>{
-loadPlaylist(index);
+switchPlaylist(index);
 wrap.classList.remove("open");
 toggle.classList.remove("open");
 };
 
 list.appendChild(button);
 });
+
+updateActive();
 
 toggle.onclick=()=>{
 const open=wrap.classList.toggle("open");
@@ -396,33 +388,24 @@ toggle.classList.toggle("open",open);
 playButton.onclick=()=>{
 if(!ready)return;
 
-if(player.getPlayerState()===YT.PlayerState.PLAYING){
-player.pauseVideo();
-}else{
-player.playVideo();
-}
+player.getPlayerState()===YT.PlayerState.PLAYING
+?player.pauseVideo()
+:player.playVideo();
 };
 
-document.getElementById("previous").onclick=()=>{
-if(!ready)return;
-player.previousVideo();
-scheduleTrackInfo(200);
+$("previous").onclick=()=>{
+if(ready)player.previousVideo();
 };
 
-document.getElementById("next").onclick=()=>{
-if(!ready)return;
-player.nextVideo();
-scheduleTrackInfo(200);
+$("next").onclick=()=>{
+if(ready)player.nextVideo();
 };
 
 function onYouTubeIframeAPIReady(){
 player=new YT.Player("player",{
 playerVars:{
-listType:"playlist",
-list:playlists[0].id,
 playsinline:1,
-rel:0,
-autoplay:0
+rel:0
 },
 events:{
 onReady:event=>{
@@ -433,9 +416,6 @@ listType:"playlist",
 list:playlists[0].id,
 index:0
 });
-
-renderActive();
-scheduleTrackInfo(150);
 },
 
 onStateChange:event=>{
@@ -451,7 +431,7 @@ if(
 event.data===YT.PlayerState.PLAYING||
 event.data===YT.PlayerState.CUED
 ){
-scheduleTrackInfo();
+updateTrack();
 }
 }
 }
