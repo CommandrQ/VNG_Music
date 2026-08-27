@@ -128,11 +128,33 @@ width:100%;
 height:100%;
 }
 
+.track-info{
+padding:14px 18px 0;
+text-align:center;
+}
+
+.track-name{
+font-size:14px;
+font-weight:600;
+line-height:1.35;
+color:#fff;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
+
+.artist-name{
+margin-top:3px;
+font-size:11px;
+color:var(--muted);
+min-height:14px;
+}
+
 .controls{
 display:grid;
 grid-template-columns:1fr auto 1fr;
 align-items:center;
-padding:16px;
+padding:12px 16px 16px;
 border-bottom:1px solid var(--line);
 }
 
@@ -257,6 +279,11 @@ color:var(--accent);
 </div>
 </section>
 
+<div class="track-info">
+<div class="track-name" id="trackName">Select a track</div>
+<div class="artist-name" id="artistName"></div>
+</div>
+
 <section class="controls">
 <button class="control" id="previous" aria-label="Previous video">◀</button>
 <button class="play" id="play" aria-label="Play">▶</button>
@@ -295,6 +322,7 @@ color:var(--accent);
 
 <script>
 const now=new Date();
+
 document.getElementById("refreshed").textContent=
 "Last refreshed "+now.toLocaleString([],{
 month:"short",
@@ -315,6 +343,8 @@ const playButton=document.getElementById("play");
 const toggle=document.getElementById("libraryToggle");
 const wrap=document.getElementById("playlistWrap");
 const placeholder=document.getElementById("placeholder");
+const trackName=document.getElementById("trackName");
+const artistName=document.getElementById("artistName");
 
 let player=null;
 let apiLoading=false;
@@ -325,6 +355,17 @@ function renderActive(){
 [...list.children].forEach((button,i)=>{
 button.classList.toggle("active",i===current);
 });
+}
+
+function updateTrackInfo(){
+if(!player)return;
+
+const data=player.getVideoData();
+
+if(data&&data.title){
+trackName.textContent=data.title;
+artistName.textContent=data.author||"";
+}
 }
 
 function loadAPI(action){
@@ -349,6 +390,7 @@ rel:0
 events:{
 onReady:()=>{
 placeholder.style.display="none";
+
 if(pendingAction){
 const action=pendingAction;
 pendingAction=null;
@@ -357,8 +399,17 @@ action();
 },
 onStateChange:event=>{
 const playing=event.data===YT.PlayerState.PLAYING;
+
 playButton.textContent=playing?"Ⅱ":"▶";
 playButton.setAttribute("aria-label",playing?"Pause":"Play");
+
+if(
+event.data===YT.PlayerState.PLAYING||
+event.data===YT.PlayerState.PAUSED||
+event.data===YT.PlayerState.CUED
+){
+setTimeout(updateTrackInfo,150);
+}
 }
 }
 });
@@ -372,6 +423,8 @@ document.head.appendChild(script);
 function loadPlaylist(index){
 current=index;
 title.textContent=playlists[index].title;
+trackName.textContent="Loading...";
+artistName.textContent="";
 renderActive();
 
 loadAPI(()=>{
@@ -416,11 +469,17 @@ player.playVideo();
 });
 
 document.getElementById("previous").addEventListener("click",()=>{
-loadAPI(()=>player.previousVideo());
+loadAPI(()=>{
+player.previousVideo();
+setTimeout(updateTrackInfo,250);
+});
 });
 
 document.getElementById("next").addEventListener("click",()=>{
-loadAPI(()=>player.nextVideo());
+loadAPI(()=>{
+player.nextVideo();
+setTimeout(updateTrackInfo,250);
+});
 });
 
 const canvas=document.getElementById("space");
