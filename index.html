@@ -3,9 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Music</title>
+<title>Q Deck</title>
 
 <style>
+:root{
+--bg:#0d0d0d;
+--panel:#171717;
+--line:#2a2a2a;
+--text:#f4f4f4;
+--muted:#8a8a8a;
+--accent:#ffd500;
+}
+
 *{box-sizing:border-box}
 
 body{
@@ -13,238 +22,231 @@ margin:0;
 min-height:100vh;
 display:grid;
 place-items:center;
-background:#111;
+background:var(--bg);
+color:var(--text);
 font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
-color:#111;
 }
 
-.ipod{
-width:min(360px,92vw);
-padding:24px;
-background:#e8e8e8;
-border-radius:32px;
-box-shadow:0 20px 50px rgba(0,0,0,.35);
-}
-
-.screen{
-background:#dce5d2;
-border:4px solid #222;
-border-radius:8px;
+.deck{
+width:min(420px,94vw);
+background:var(--panel);
+border:1px solid var(--line);
+border-radius:20px;
 overflow:hidden;
-margin-bottom:24px;
 }
 
-.screen-header{
+.top{
+padding:18px;
+border-bottom:1px solid var(--line);
+}
+
+.brand{
 display:flex;
 justify-content:space-between;
-padding:7px 10px;
-border-bottom:2px solid #222;
-font-size:13px;
-font-weight:700;
+align-items:center;
+margin-bottom:18px;
+font-size:12px;
+letter-spacing:.12em;
+text-transform:uppercase;
+color:var(--muted);
 }
 
-.screen-content{
-padding:14px;
-min-height:110px;
+.dot{
+width:8px;
+height:8px;
+border-radius:50%;
+background:var(--accent);
 }
 
 .label{
 font-size:11px;
+letter-spacing:.1em;
 text-transform:uppercase;
-letter-spacing:.08em;
-opacity:.6;
+color:var(--muted);
 }
 
-.playlist-title{
-margin:5px 0 4px;
-font-size:20px;
-font-weight:700;
+.title{
+margin:6px 0 4px;
+font-size:23px;
+font-weight:600;
 }
 
-.status{
+.sub{
 font-size:13px;
-opacity:.7;
+color:var(--muted);
 }
 
-.player{
+.video{
 width:100%;
 aspect-ratio:16/9;
+margin-top:16px;
 border:0;
-display:block;
-margin-top:12px;
+border-radius:10px;
+background:#000;
 }
 
-.wheel{
-width:210px;
-height:210px;
-margin:auto;
-border-radius:50%;
-background:#fff;
-position:relative;
+.controls{
+display:grid;
+grid-template-columns:1fr auto 1fr;
+align-items:center;
+padding:18px;
+border-bottom:1px solid var(--line);
 }
 
-.wheel button{
-position:absolute;
+.control{
 border:0;
 background:none;
-font:inherit;
-font-weight:600;
+color:var(--text);
+font-size:20px;
 cursor:pointer;
-color:#777;
 }
 
-.menu{
-top:18px;
-left:50%;
-transform:translateX(-50%);
-font-size:12px;
+.control:first-child{
+justify-self:end;
+margin-right:30px;
+}
+
+.control:last-child{
+justify-self:start;
+margin-left:30px;
 }
 
 .play{
-bottom:17px;
-left:50%;
-transform:translateX(-50%);
-font-size:20px;
-}
-
-.prev{
-left:20px;
-top:50%;
-transform:translateY(-50%);
-font-size:18px;
-}
-
-.next{
-right:20px;
-top:50%;
-transform:translateY(-50%);
-font-size:18px;
-}
-
-.center{
-position:absolute;
-width:85px;
-height:85px;
+width:58px;
+height:58px;
 border-radius:50%;
-background:#e8e8e8;
-left:50%;
-top:50%;
-transform:translate(-50%,-50%);
-}
-
-.playlist-list{
-display:none;
-padding:0;
-margin:0;
-list-style:none;
-}
-
-.playlist-list.active{
-display:block;
-}
-
-.playlist-list button{
-width:100%;
-padding:10px 8px;
-border:0;
-border-bottom:1px solid rgba(0,0,0,.15);
-background:none;
-text-align:left;
-font:inherit;
+border:1px solid var(--line);
+background:#fff;
+color:#111;
+font-size:20px;
 cursor:pointer;
 }
 
-.playlist-list button:hover{
-background:rgba(0,0,0,.08);
+.library{
+padding:16px;
+}
+
+.library-head{
+display:flex;
+justify-content:space-between;
+margin-bottom:10px;
+font-size:12px;
+color:var(--muted);
+}
+
+.playlist{
+width:100%;
+display:grid;
+grid-template-columns:34px 1fr auto;
+align-items:center;
+gap:10px;
+padding:13px 6px;
+border:0;
+border-top:1px solid var(--line);
+background:none;
+color:var(--text);
+text-align:left;
+cursor:pointer;
+}
+
+.playlist:first-of-type{
+border-top:0;
+}
+
+.number{
+font-size:12px;
+color:var(--accent);
+}
+
+.name{
+font-size:15px;
+}
+
+.arrow{
+color:var(--muted);
+}
+
+.playlist:hover .arrow{
+color:var(--accent);
 }
 </style>
 </head>
 
 <body>
 
-<main class="ipod">
+<main class="deck">
 
-<section class="screen">
-<div class="screen-header">
-<span>Q Music</span>
-<span>♫</span>
+<section class="top">
+<div class="brand">
+<span>Q Deck</span>
+<span class="dot"></span>
 </div>
 
-<div class="screen-content">
-
-<div id="nowPlaying">
-<div class="label">Playlist</div>
-<div class="playlist-title" id="playlistTitle"></div>
-<div class="status">Powered by YouTube</div>
+<div class="label">Now Playing</div>
+<div class="title" id="title">Blaze's Cool Mixtape</div>
+<div class="sub">YouTube Playlist</div>
 
 <iframe
 id="player"
-class="player"
-title="YouTube playlist"
+class="video"
+src="https://www.youtube-nocookie.com/embed/videoseries?list=PLauF-OVoaXM8"
+title="Blaze's Cool Mixtape"
 allow="autoplay; encrypted-media"
 allowfullscreen>
 </iframe>
-</div>
-
-<ul class="playlist-list" id="playlistList"></ul>
-
-</div>
 </section>
 
-<div class="wheel">
-<button class="menu" id="menu">MENU</button>
-<button class="prev" aria-label="Previous">◀</button>
-<button class="next" aria-label="Next">▶</button>
-<button class="play" aria-label="Play">▶︎</button>
-<div class="center"></div>
+<section class="controls">
+<button class="control" aria-label="Previous">◀</button>
+<button class="play" aria-label="Play">▶</button>
+<button class="control" aria-label="Next">▶</button>
+</section>
+
+<section class="library">
+<div class="library-head">
+<span>Playlists</span>
+<span id="count"></span>
 </div>
+
+<div id="playlistList"></div>
+</section>
 
 </main>
 
 <script type="application/json" id="playlistData">
 {
-  "playlists":[
-    {
-      "title":"Blaze's Cool Mixtape",
-      "youtubePlaylistId":"PLauF-OVoaXM8",
-      "active":true
-    }
-  ]
+"playlists":[
+{
+"title":"Blaze's Cool Mixtape",
+"id":"PLauF-OVoaXM8",
+"active":true
+}
+]
 }
 </script>
 
 <script>
 const data=JSON.parse(document.getElementById("playlistData").textContent);
-const playlists=data.playlists.filter(p=>p.active);
-
-const title=document.getElementById("playlistTitle");
-const player=document.getElementById("player");
+const playlists=data.playlists.filter(x=>x.active);
 const list=document.getElementById("playlistList");
-const nowPlaying=document.getElementById("nowPlaying");
-const menu=document.getElementById("menu");
+const player=document.getElementById("player");
+const title=document.getElementById("title");
 
-function loadPlaylist(p){
+document.getElementById("count").textContent=playlists.length;
+
+playlists.forEach((p,i)=>{
+const b=document.createElement("button");
+b.className="playlist";
+b.innerHTML=`
+<span class="number">${String(i+1).padStart(2,"0")}</span>
+<span class="name">${p.title}</span>
+<span class="arrow">›</span>`;
+b.onclick=()=>{
 title.textContent=p.title;
-player.src=`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(p.youtubePlaylistId)}`;
-list.classList.remove("active");
-nowPlaying.style.display="block";
-}
-
-playlists.forEach(p=>{
-const li=document.createElement("li");
-const button=document.createElement("button");
-button.textContent=p.title;
-button.addEventListener("click",()=>loadPlaylist(p));
-li.appendChild(button);
-list.appendChild(li);
+player.src=`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(p.id)}`;
+};
+list.appendChild(b);
 });
-
-menu.addEventListener("click",()=>{
-const open=list.classList.toggle("active");
-nowPlaying.style.display=open?"none":"block";
-});
-
-if(playlists.length)loadPlaylist(playlists[0]);
 </script>
 
 </body>
