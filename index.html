@@ -7,7 +7,8 @@
 
 <style>
 :root{
---panel:rgba(18,18,22,.96);
+--bg:#080808;
+--panel:#121216;
 --line:rgba(255,255,255,.08);
 --text:#fff;
 --muted:#aaa;
@@ -26,20 +27,9 @@ overflow:hidden;
 body{
 display:grid;
 place-items:center;
-background:
-radial-gradient(circle at 20% 20%,rgba(124,66,180,.35),transparent 45%),
-radial-gradient(circle at 80% 70%,rgba(71,30,120,.4),transparent 50%),
-linear-gradient(160deg,#0b0612,#1b0d2d 50%,#08060d);
+background:var(--bg);
 color:var(--text);
 font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
-}
-
-#space{
-position:absolute;
-inset:0;
-width:100%;
-height:100%;
-pointer-events:none;
 }
 
 .refresh{
@@ -61,23 +51,25 @@ cursor:pointer;
 opacity:.8;
 }
 
+.refresh button:hover{
+opacity:1;
+}
+
 .refreshed{
 display:block;
 margin-top:4px;
-color:rgba(255,255,255,.5);
+color:rgba(255,255,255,.45);
 font-size:9px;
 }
 
 .deck{
-position:relative;
-z-index:1;
 width:min(420px,92vw);
 max-height:94vh;
 background:var(--panel);
 border:1px solid var(--line);
 border-radius:20px;
 overflow:hidden;
-box-shadow:0 25px 60px rgba(0,0,0,.65);
+box-shadow:0 25px 60px rgba(0,0,0,.7);
 }
 
 .top{
@@ -111,16 +103,6 @@ border-radius:10px;
 overflow:hidden;
 background:#000;
 box-shadow:0 12px 30px rgba(0,0,0,.75);
-position:relative;
-}
-
-.player-placeholder{
-position:absolute;
-inset:0;
-display:grid;
-place-items:center;
-color:var(--muted);
-font-size:12px;
 }
 
 .player iframe{
@@ -137,7 +119,6 @@ text-align:center;
 font-size:14px;
 font-weight:600;
 line-height:1.35;
-color:#fff;
 white-space:nowrap;
 overflow:hidden;
 text-overflow:ellipsis;
@@ -260,8 +241,6 @@ color:var(--accent);
 
 <body>
 
-<canvas id="space"></canvas>
-
 <div class="refresh">
 <button id="refresh">Refresh ↻</button>
 <span class="refreshed" id="refreshed"></span>
@@ -274,13 +253,12 @@ color:var(--accent);
 <div class="title" id="title">Blaze's Cool Mixtape</div>
 
 <div class="player">
-<div class="player-placeholder" id="placeholder">Press play</div>
 <div id="player"></div>
 </div>
 </section>
 
 <div class="track-info">
-<div class="track-name" id="trackName">Select a track</div>
+<div class="track-name" id="trackName">Loading...</div>
 <div class="artist-name" id="artistName"></div>
 </div>
 
@@ -321,17 +299,18 @@ color:var(--accent);
 </script>
 
 <script>
-const now=new Date();
+const refreshed=new Date();
 
 document.getElementById("refreshed").textContent=
-"Last refreshed "+now.toLocaleString([],{
+"Last refreshed "+refreshed.toLocaleString([],{
 month:"short",
 day:"numeric",
 hour:"numeric",
 minute:"2-digit"
 });
 
-document.getElementById("refresh").addEventListener("click",()=>location.reload());
+document.getElementById("refresh")
+.addEventListener("click",()=>location.reload());
 
 const playlists=JSON.parse(
 document.getElementById("playlistData").textContent
@@ -342,14 +321,23 @@ const list=document.getElementById("playlistList");
 const playButton=document.getElementById("play");
 const toggle=document.getElementById("libraryToggle");
 const wrap=document.getElementById("playlistWrap");
-const placeholder=document.getElementById("placeholder");
 const trackName=document.getElementById("trackName");
 const artistName=document.getElementById("artistName");
 
-let player=null;
-let apiLoading=false;
+let player;
 let current=0;
-let pendingAction=null;
+let ready=false;
+
+function updateTrackInfo(){
+if(!player||!ready)return;
+
+const data=player.getVideoData();
+
+if(data?.title){
+trackName.textContent=data.title;
+artistName.textContent=data.author||"";
+}
+}
 
 function renderActive(){
 [...list.children].forEach((button,i)=>{
@@ -357,86 +345,27 @@ button.classList.toggle("active",i===current);
 });
 }
 
-function updateTrackInfo(){
-if(!player)return;
-
-const data=player.getVideoData();
-
-if(data&&data.title){
-trackName.textContent=data.title;
-artistName.textContent=data.author||"";
-}
-}
-
-function loadAPI(action){
-pendingAction=action;
-
-if(player){
-action();
-return;
-}
-
-if(apiLoading)return;
-apiLoading=true;
-
-window.onYouTubeIframeAPIReady=()=>{
-player=new YT.Player("player",{
-playerVars:{
-listType:"playlist",
-list:playlists[current].id,
-playsinline:1,
-rel:0
-},
-events:{
-onReady:()=>{
-placeholder.style.display="none";
-
-if(pendingAction){
-const action=pendingAction;
-pendingAction=null;
-action();
-}
-},
-onStateChange:event=>{
-const playing=event.data===YT.PlayerState.PLAYING;
-
-playButton.textContent=playing?"Ⅱ":"▶";
-playButton.setAttribute("aria-label",playing?"Pause":"Play");
-
-if(
-event.data===YT.PlayerState.PLAYING||
-event.data===YT.PlayerState.PAUSED||
-event.data===YT.PlayerState.CUED
-){
-setTimeout(updateTrackInfo,150);
-}
-}
-}
-});
-};
-
-const script=document.createElement("script");
-script.src="https://www.youtube.com/iframe_api";
-document.head.appendChild(script);
-}
-
 function loadPlaylist(index){
+if(!ready)return;
+
 current=index;
+
 title.textContent=playlists[index].title;
 trackName.textContent="Loading...";
 artistName.textContent="";
-renderActive();
 
-loadAPI(()=>{
 player.loadPlaylist({
 listType:"playlist",
-list:playlists[index].id
+list:playlists[index].id,
+index:0
 });
-});
+
+renderActive();
 }
 
 playlists.forEach((playlist,index)=>{
 const button=document.createElement("button");
+
 button.className="playlist";
 button.textContent=playlist.title;
 
@@ -449,15 +378,14 @@ toggle.classList.remove("open");
 list.appendChild(button);
 });
 
-renderActive();
-
 toggle.addEventListener("click",()=>{
 const open=wrap.classList.toggle("open");
 toggle.classList.toggle("open",open);
 });
 
 playButton.addEventListener("click",()=>{
-loadAPI(()=>{
+if(!ready)return;
+
 const state=player.getPlayerState();
 
 if(state===YT.PlayerState.PLAYING){
@@ -466,136 +394,59 @@ player.pauseVideo();
 player.playVideo();
 }
 });
-});
 
 document.getElementById("previous").addEventListener("click",()=>{
-loadAPI(()=>{
-player.previousVideo();
-setTimeout(updateTrackInfo,250);
-});
+if(ready)player.previousVideo();
 });
 
 document.getElementById("next").addEventListener("click",()=>{
-loadAPI(()=>{
-player.nextVideo();
+if(ready)player.nextVideo();
+});
+
+function onYouTubeIframeAPIReady(){
+player=new YT.Player("player",{
+playerVars:{
+listType:"playlist",
+list:playlists[0].id,
+playsinline:1,
+rel:0,
+autoplay:0
+},
+events:{
+onReady:event=>{
+ready=true;
+event.target.cuePlaylist({
+listType:"playlist",
+list:playlists[0].id,
+index:0
+});
+renderActive();
 setTimeout(updateTrackInfo,250);
-});
-});
+},
+onStateChange:event=>{
+const playing=event.data===YT.PlayerState.PLAYING;
 
-const canvas=document.getElementById("space");
-const ctx=canvas.getContext("2d");
-const reducedMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
+playButton.textContent=playing?"Ⅱ":"▶";
+playButton.setAttribute(
+"aria-label",
+playing?"Pause":"Play"
+);
 
-let stars=[];
-let comets=[];
-let width=0;
-let height=0;
-let lastFrame=0;
-let lastComet=0;
-let nextComet=4000+Math.random()*6000;
-
-function resizeSpace(){
-const dpr=Math.min(devicePixelRatio||1,1.5);
-
-width=innerWidth;
-height=innerHeight;
-
-canvas.width=width*dpr;
-canvas.height=height*dpr;
-canvas.style.width=width+"px";
-canvas.style.height=height+"px";
-
-ctx.setTransform(dpr,0,0,dpr,0,0);
-
-const count=Math.min(90,Math.max(45,Math.floor(width*height/14000)));
-
-stars=Array.from({length:count},()=>({
-x:Math.random()*width,
-y:Math.random()*height,
-r:Math.random()*.9+.25,
-speed:Math.random()*.07+.015,
-alpha:Math.random()*.55+.3
-}));
+if(
+event.data===YT.PlayerState.PLAYING||
+event.data===YT.PlayerState.PAUSED||
+event.data===YT.PlayerState.CUED
+){
+setTimeout(updateTrackInfo,150);
 }
-
-function createComet(){
-const fromLeft=Math.random()>.5;
-const length=70+Math.random()*90;
-
-comets.push({
-x:fromLeft?-length:width+length,
-y:Math.random()*height*.75,
-vx:(fromLeft?1:-1)*(4+Math.random()*2),
-vy:1.2+Math.random()*1.5,
-length
+}
+}
 });
 }
 
-function drawSpace(time){
-if(time-lastFrame<33){
-requestAnimationFrame(drawSpace);
-return;
-}
-
-lastFrame=time;
-ctx.clearRect(0,0,width,height);
-
-for(const star of stars){
-star.y+=star.speed;
-
-if(star.y>height){
-star.y=0;
-star.x=Math.random()*width;
-}
-
-ctx.beginPath();
-ctx.fillStyle=`rgba(255,255,255,${star.alpha})`;
-ctx.arc(star.x,star.y,star.r,0,Math.PI*2);
-ctx.fill();
-}
-
-if(time-lastComet>nextComet){
-createComet();
-lastComet=time;
-nextComet=5000+Math.random()*8000;
-}
-
-for(let i=comets.length-1;i>=0;i--){
-const c=comets[i];
-c.x+=c.vx;
-c.y+=c.vy;
-
-const mag=Math.hypot(c.vx,c.vy);
-const ux=c.vx/mag;
-const uy=c.vy/mag;
-const tailX=c.x-ux*c.length;
-const tailY=c.y-uy*c.length;
-
-const gradient=ctx.createLinearGradient(tailX,tailY,c.x,c.y);
-gradient.addColorStop(0,"rgba(255,215,106,0)");
-gradient.addColorStop(1,"rgba(255,239,170,.95)");
-
-ctx.strokeStyle=gradient;
-ctx.lineWidth=2;
-ctx.beginPath();
-ctx.moveTo(tailX,tailY);
-ctx.lineTo(c.x,c.y);
-ctx.stroke();
-
-if(c.x<-200||c.x>width+200||c.y>height+150){
-comets.splice(i,1);
-}
-}
-
-requestAnimationFrame(drawSpace);
-}
-
-resizeSpace();
-addEventListener("resize",resizeSpace);
-
-if(!reducedMotion){
-requestAnimationFrame(drawSpace);
-}
+const api=document.createElement("script");
+api.src="https://www.youtube.com/iframe_api";
+document.head.appendChild(api);
 </script>
 
 </body>
