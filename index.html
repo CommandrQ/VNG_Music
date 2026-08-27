@@ -42,6 +42,34 @@ height:100%;
 pointer-events:none;
 }
 
+.refresh{
+position:absolute;
+top:16px;
+right:18px;
+z-index:2;
+text-align:right;
+}
+
+.refresh button{
+padding:0;
+border:0;
+background:none;
+color:#fff;
+font:inherit;
+font-size:12px;
+cursor:pointer;
+opacity:.8;
+}
+
+.refresh button:hover{opacity:1}
+
+.refreshed{
+display:block;
+margin-top:4px;
+color:rgba(255,255,255,.5);
+font-size:9px;
+}
+
 .deck{
 position:relative;
 z-index:1;
@@ -103,8 +131,7 @@ padding:16px;
 border-bottom:1px solid var(--line);
 }
 
-.control,
-.play{
+.control,.play{
 border:0;
 cursor:pointer;
 }
@@ -154,7 +181,7 @@ text-transform:uppercase;
 cursor:pointer;
 }
 
-.library-toggle .chevron{
+.chevron{
 transition:transform .2s ease;
 }
 
@@ -221,6 +248,11 @@ color:var(--accent);
 
 <canvas id="space"></canvas>
 
+<div class="refresh">
+<button id="refresh">Refresh ↻</button>
+<span class="refreshed" id="refreshed"></span>
+</div>
+
 <main class="deck">
 
 <section class="top">
@@ -264,6 +296,21 @@ color:var(--accent);
 </script>
 
 <script>
+const refreshTime=new Date();
+localStorage.setItem("musicLastRefresh",refreshTime.toISOString());
+
+document.getElementById("refreshed").textContent=
+"Last refreshed "+refreshTime.toLocaleString([],{
+month:"short",
+day:"numeric",
+hour:"numeric",
+minute:"2-digit"
+});
+
+document.getElementById("refresh").addEventListener("click",()=>{
+location.reload();
+});
+
 const canvas=document.getElementById("space");
 const ctx=canvas.getContext("2d");
 const reducedMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -308,8 +355,7 @@ x:fromLeft?-length:width+length,
 y:Math.random()*height*.8,
 vx:(fromLeft?1:-1)*(4+Math.random()*3),
 vy:1.5+Math.random()*2,
-length,
-alpha:1
+length
 });
 }
 
@@ -349,7 +395,6 @@ c.y+=c.vy;
 const mag=Math.hypot(c.vx,c.vy);
 const ux=c.vx/mag;
 const uy=c.vy/mag;
-
 const tailX=c.x-ux*c.length;
 const tailY=c.y-uy*c.length;
 
@@ -427,7 +472,6 @@ renderActive();
 
 playlists.forEach((playlist,index)=>{
 const button=document.createElement("button");
-
 button.className="playlist";
 button.textContent=playlist.title;
 
@@ -478,10 +522,7 @@ onStateChange:event=>{
 const playing=event.data===YT.PlayerState.PLAYING;
 
 playButton.textContent=playing?"Ⅱ":"▶";
-playButton.setAttribute(
-"aria-label",
-playing?"Pause":"Play"
-);
+playButton.setAttribute("aria-label",playing?"Pause":"Play");
 }
 }
 });
