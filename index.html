@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Music</title>
 
+<link rel="preconnect" href="https://www.youtube.com">
+<link rel="preconnect" href="https://www.google.com">
+<link rel="preconnect" href="https://i.ytimg.com">
+<link rel="dns-prefetch" href="//www.youtube.com">
+<link rel="dns-prefetch" href="//i.ytimg.com">
+
 <style>
 :root{
 --bg:#080808;
@@ -304,8 +310,7 @@ hour:"numeric",
 minute:"2-digit"
 });
 
-document.getElementById("refresh")
-.addEventListener("click",()=>location.reload());
+document.getElementById("refresh").onclick=()=>location.reload();
 
 const playlists=JSON.parse(
 document.getElementById("playlistData").textContent
@@ -320,25 +325,31 @@ const trackName=document.getElementById("trackName");
 const artistName=document.getElementById("artistName");
 
 let player;
-let current=0;
 let ready=false;
-let switchTimer=null;
-
-function updateTrackInfo(){
-if(!player||!ready)return;
-
-const data=player.getVideoData();
-
-if(data?.title){
-trackName.textContent=data.title;
-artistName.textContent=data.author||"";
-}
-}
+let current=0;
+let switchTimer;
+let metadataTimer;
 
 function renderActive(){
 [...list.children].forEach((button,i)=>{
 button.classList.toggle("active",i===current);
 });
+}
+
+function updateTrackInfo(){
+if(!ready)return;
+
+const data=player.getVideoData();
+
+if(!data?.title)return;
+
+trackName.textContent=data.title;
+artistName.textContent=data.author||"";
+}
+
+function scheduleTrackInfo(delay=120){
+clearTimeout(metadataTimer);
+metadataTimer=setTimeout(updateTrackInfo,delay);
 }
 
 function loadPlaylist(index){
@@ -347,13 +358,11 @@ if(!ready)return;
 clearTimeout(switchTimer);
 
 current=index;
-
 title.textContent=playlists[index].title;
 trackName.textContent="Loading...";
 artistName.textContent="";
 
 renderActive();
-
 player.stopVideo();
 
 switchTimer=setTimeout(()=>{
@@ -367,52 +376,44 @@ index:0
 
 playlists.forEach((playlist,index)=>{
 const button=document.createElement("button");
-
 button.className="playlist";
 button.textContent=playlist.title;
 
-button.addEventListener("click",()=>{
+button.onclick=()=>{
 loadPlaylist(index);
 wrap.classList.remove("open");
 toggle.classList.remove("open");
-});
+};
 
 list.appendChild(button);
 });
 
-toggle.addEventListener("click",()=>{
+toggle.onclick=()=>{
 const open=wrap.classList.toggle("open");
 toggle.classList.toggle("open",open);
-});
+};
 
-playButton.addEventListener("click",()=>{
+playButton.onclick=()=>{
 if(!ready)return;
 
-const state=player.getPlayerState();
-
-if(state===YT.PlayerState.PLAYING){
+if(player.getPlayerState()===YT.PlayerState.PLAYING){
 player.pauseVideo();
-return;
-}
-
+}else{
 player.playVideo();
-});
+}
+};
 
-document.getElementById("previous").addEventListener("click",()=>{
+document.getElementById("previous").onclick=()=>{
 if(!ready)return;
-
 player.previousVideo();
+scheduleTrackInfo(200);
+};
 
-setTimeout(updateTrackInfo,300);
-});
-
-document.getElementById("next").addEventListener("click",()=>{
+document.getElementById("next").onclick=()=>{
 if(!ready)return;
-
 player.nextVideo();
-
-setTimeout(updateTrackInfo,300);
-});
+scheduleTrackInfo(200);
+};
 
 function onYouTubeIframeAPIReady(){
 player=new YT.Player("player",{
@@ -434,7 +435,7 @@ index:0
 });
 
 renderActive();
-setTimeout(updateTrackInfo,300);
+scheduleTrackInfo(150);
 },
 
 onStateChange:event=>{
@@ -448,20 +449,17 @@ playing?"Pause":"Play"
 
 if(
 event.data===YT.PlayerState.PLAYING||
-event.data===YT.PlayerState.PAUSED||
 event.data===YT.PlayerState.CUED
 ){
-setTimeout(updateTrackInfo,200);
+scheduleTrackInfo();
 }
 }
 }
 });
 }
-
-const api=document.createElement("script");
-api.src="https://www.youtube.com/iframe_api";
-document.head.appendChild(api);
 </script>
+
+<script async src="https://www.youtube.com/iframe_api"></script>
 
 </body>
 </html>
