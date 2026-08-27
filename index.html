@@ -156,7 +156,9 @@ text-align:left;
 cursor:pointer;
 }
 
-.playlist:first-child{border-top:0}
+.playlist:first-child{
+border-top:0;
+}
 
 .playlist.active{
 color:var(--accent);
@@ -167,11 +169,17 @@ font-size:12px;
 color:var(--accent);
 }
 
-.name{font-size:15px}
+.name{
+font-size:15px;
+}
 
-.arrow{color:var(--muted)}
+.arrow{
+color:var(--muted);
+}
 
-.playlist:hover .arrow{color:var(--accent)}
+.playlist:hover .arrow{
+color:var(--accent);
+}
 </style>
 </head>
 
@@ -180,6 +188,7 @@ color:var(--accent);
 <main class="deck">
 
 <section class="top">
+
 <div class="brand">
 <span>Q Deck</span>
 <span class="dot"></span>
@@ -192,33 +201,37 @@ color:var(--accent);
 <div class="player">
 <div id="player"></div>
 </div>
+
 </section>
 
 <section class="controls">
-<button class="control" id="previous" aria-label="Previous playlist">◀</button>
+<button class="control" id="previous" aria-label="Previous video">◀</button>
 <button class="play" id="play" aria-label="Play">▶</button>
-<button class="control" id="next" aria-label="Next playlist">▶</button>
+<button class="control" id="next" aria-label="Next video">▶</button>
 </section>
 
 <section class="library">
+
 <div class="library-head">
 <span>Playlists</span>
 <span id="count"></span>
 </div>
+
 <div id="playlistList"></div>
+
 </section>
 
 </main>
 
 <script type="application/json" id="playlistData">
 {
-"playlists":[
-{
-"title":"Blaze's Cool Mixtape",
-"id":"PLauF-OVoaXM8",
-"active":true
-}
-]
+  "playlists":[
+    {
+      "title":"Blaze's Cool Mixtape",
+      "id":"PLauF-OVoaXM8",
+      "active":true
+    }
+  ]
 }
 </script>
 
@@ -236,53 +249,57 @@ let current=0;
 
 document.getElementById("count").textContent=playlists.length;
 
-function loadPlaylist(index,autoplay=true){
-if(!playlists.length)return;
-
-current=(index+playlists.length)%playlists.length;
-const p=playlists[current];
-
-title.textContent=p.title;
-
-player.loadPlaylist({
-listType:"playlist",
-list:p.id
-});
-
-if(!autoplay)player.pauseVideo();
-
-renderActive();
-}
-
 function renderActive(){
 [...list.children].forEach((button,i)=>{
 button.classList.toggle("active",i===current);
 });
 }
 
-playlists.forEach((p,i)=>{
+function loadPlaylist(index){
+if(!player||!playlists.length)return;
+
+current=index;
+const playlist=playlists[current];
+
+title.textContent=playlist.title;
+
+player.loadPlaylist({
+listType:"playlist",
+list:playlist.id
+});
+
+renderActive();
+}
+
+playlists.forEach((playlist,index)=>{
 const button=document.createElement("button");
+
 button.className="playlist";
 
 button.innerHTML=`
-<span class="number">${String(i+1).padStart(2,"0")}</span>
-<span class="name">${p.title}</span>
+<span class="number">${String(index+1).padStart(2,"0")}</span>
+<span class="name">${playlist.title}</span>
 <span class="arrow">›</span>
 `;
 
-button.addEventListener("click",()=>loadPlaylist(i));
+button.addEventListener("click",()=>{
+loadPlaylist(index);
+});
+
 list.appendChild(button);
 });
 
 document.getElementById("previous").addEventListener("click",()=>{
-loadPlaylist(current-1);
+if(player)player.previousVideo();
 });
 
 document.getElementById("next").addEventListener("click",()=>{
-loadPlaylist(current+1);
+if(player)player.nextVideo();
 });
 
 playButton.addEventListener("click",()=>{
+if(!player)return;
+
 const state=player.getPlayerState();
 
 if(state===YT.PlayerState.PLAYING){
@@ -293,17 +310,24 @@ player.playVideo();
 });
 
 function onYouTubeIframeAPIReady(){
+if(!playlists.length)return;
+
 player=new YT.Player("player",{
 playerVars:{
 listType:"playlist",
 list:playlists[0].id,
-playsinline:1
+playsinline:1,
+rel:0
 },
 events:{
 onStateChange:event=>{
 const playing=event.data===YT.PlayerState.PLAYING;
+
 playButton.textContent=playing?"Ⅱ":"▶";
-playButton.setAttribute("aria-label",playing?"Pause":"Play");
+playButton.setAttribute(
+"aria-label",
+playing?"Pause":"Play"
+);
 }
 }
 });
