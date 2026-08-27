@@ -76,13 +76,18 @@ font-size:13px;
 color:var(--muted);
 }
 
-.video{
+.player{
 width:100%;
 aspect-ratio:16/9;
 margin-top:16px;
-border:0;
 border-radius:10px;
+overflow:hidden;
 background:#000;
+}
+
+.player iframe{
+width:100%;
+height:100%;
 }
 
 .controls{
@@ -93,12 +98,16 @@ padding:18px;
 border-bottom:1px solid var(--line);
 }
 
-.control{
+.control,
+.play{
 border:0;
+cursor:pointer;
+}
+
+.control{
 background:none;
 color:var(--text);
 font-size:20px;
-cursor:pointer;
 }
 
 .control:first-child{
@@ -115,11 +124,9 @@ margin-left:30px;
 width:58px;
 height:58px;
 border-radius:50%;
-border:1px solid var(--line);
 background:#fff;
 color:#111;
 font-size:20px;
-cursor:pointer;
 }
 
 .library{
@@ -149,8 +156,10 @@ text-align:left;
 cursor:pointer;
 }
 
-.playlist:first-of-type{
-border-top:0;
+.playlist:first-child{border-top:0}
+
+.playlist.active{
+color:var(--accent);
 }
 
 .number{
@@ -158,17 +167,11 @@ font-size:12px;
 color:var(--accent);
 }
 
-.name{
-font-size:15px;
-}
+.name{font-size:15px}
 
-.arrow{
-color:var(--muted);
-}
+.arrow{color:var(--muted)}
 
-.playlist:hover .arrow{
-color:var(--accent);
-}
+.playlist:hover .arrow{color:var(--accent)}
 </style>
 </head>
 
@@ -186,20 +189,15 @@ color:var(--accent);
 <div class="title" id="title">Blaze's Cool Mixtape</div>
 <div class="sub">YouTube Playlist</div>
 
-<iframe
-id="player"
-class="video"
-src="https://www.youtube-nocookie.com/embed/videoseries?list=PLauF-OVoaXM8"
-title="Blaze's Cool Mixtape"
-allow="autoplay; encrypted-media"
-allowfullscreen>
-</iframe>
+<div class="player">
+<div id="player"></div>
+</div>
 </section>
 
 <section class="controls">
-<button class="control" aria-label="Previous">◀</button>
-<button class="play" aria-label="Play">▶</button>
-<button class="control" aria-label="Next">▶</button>
+<button class="control" id="previous" aria-label="Previous playlist">◀</button>
+<button class="play" id="play" aria-label="Play">▶</button>
+<button class="control" id="next" aria-label="Next playlist">▶</button>
 </section>
 
 <section class="library">
@@ -207,7 +205,6 @@ allowfullscreen>
 <span>Playlists</span>
 <span id="count"></span>
 </div>
-
 <div id="playlistList"></div>
 </section>
 
@@ -226,27 +223,97 @@ allowfullscreen>
 </script>
 
 <script>
-const data=JSON.parse(document.getElementById("playlistData").textContent);
-const playlists=data.playlists.filter(x=>x.active);
-const list=document.getElementById("playlistList");
-const player=document.getElementById("player");
+const playlists=JSON.parse(
+document.getElementById("playlistData").textContent
+).playlists.filter(p=>p.active);
+
 const title=document.getElementById("title");
+const list=document.getElementById("playlistList");
+const playButton=document.getElementById("play");
+
+let player;
+let current=0;
 
 document.getElementById("count").textContent=playlists.length;
 
+function loadPlaylist(index,autoplay=true){
+if(!playlists.length)return;
+
+current=(index+playlists.length)%playlists.length;
+const p=playlists[current];
+
+title.textContent=p.title;
+
+player.loadPlaylist({
+listType:"playlist",
+list:p.id
+});
+
+if(!autoplay)player.pauseVideo();
+
+renderActive();
+}
+
+function renderActive(){
+[...list.children].forEach((button,i)=>{
+button.classList.toggle("active",i===current);
+});
+}
+
 playlists.forEach((p,i)=>{
-const b=document.createElement("button");
-b.className="playlist";
-b.innerHTML=`
+const button=document.createElement("button");
+button.className="playlist";
+
+button.innerHTML=`
 <span class="number">${String(i+1).padStart(2,"0")}</span>
 <span class="name">${p.title}</span>
-<span class="arrow">›</span>`;
-b.onclick=()=>{
-title.textContent=p.title;
-player.src=`https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(p.id)}`;
-};
-list.appendChild(b);
+<span class="arrow">›</span>
+`;
+
+button.addEventListener("click",()=>loadPlaylist(i));
+list.appendChild(button);
 });
+
+document.getElementById("previous").addEventListener("click",()=>{
+loadPlaylist(current-1);
+});
+
+document.getElementById("next").addEventListener("click",()=>{
+loadPlaylist(current+1);
+});
+
+playButton.addEventListener("click",()=>{
+const state=player.getPlayerState();
+
+if(state===YT.PlayerState.PLAYING){
+player.pauseVideo();
+}else{
+player.playVideo();
+}
+});
+
+function onYouTubeIframeAPIReady(){
+player=new YT.Player("player",{
+playerVars:{
+listType:"playlist",
+list:playlists[0].id,
+playsinline:1
+},
+events:{
+onStateChange:event=>{
+const playing=event.data===YT.PlayerState.PLAYING;
+playButton.textContent=playing?"Ⅱ":"▶";
+playButton.setAttribute("aria-label",playing?"Pause":"Play");
+}
+}
+});
+
+renderActive();
+}
+
+const api=document.createElement("script");
+api.src="https://www.youtube.com/iframe_api";
+document.head.appendChild(api);
 </script>
 
 </body>
