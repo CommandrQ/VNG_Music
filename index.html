@@ -19,7 +19,9 @@
 --accent:#ffd76a;
 }
 
-*{box-sizing:border-box}
+*{
+box-sizing:border-box;
+}
 
 html,body{
 margin:0;
@@ -36,6 +38,43 @@ color:var(--text);
 font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
 }
 
+/* RETURN HOME */
+.home-link{
+position:absolute;
+top:16px;
+left:18px;
+z-index:10;
+display:inline-flex;
+align-items:center;
+gap:7px;
+padding:7px 12px;
+border:1px solid rgba(255,255,255,.22);
+border-radius:999px;
+background:rgba(255,255,255,.04);
+color:#fff;
+text-decoration:none;
+font-size:12px;
+font-weight:500;
+backdrop-filter:blur(8px);
+-webkit-backdrop-filter:blur(8px);
+transition:
+background .2s ease,
+border-color .2s ease,
+transform .2s ease;
+}
+
+.home-link:hover{
+background:rgba(255,255,255,.09);
+border-color:var(--accent);
+transform:translateY(-1px);
+}
+
+.home-arrow{
+color:var(--accent);
+font-size:14px;
+}
+
+/* REFRESH */
 .refresh{
 position:absolute;
 top:16px;
@@ -54,6 +93,10 @@ cursor:pointer;
 opacity:.8;
 }
 
+.refresh button:hover{
+opacity:1;
+}
+
 .refreshed{
 display:block;
 margin-top:4px;
@@ -61,6 +104,7 @@ font-size:9px;
 color:rgba(255,255,255,.45);
 }
 
+/* PLAYER */
 .deck{
 width:min(420px,92vw);
 max-height:94vh;
@@ -127,6 +171,7 @@ font-size:11px;
 color:var(--muted);
 }
 
+/* CONTROLS */
 .controls{
 display:grid;
 grid-template-columns:1fr auto 1fr;
@@ -135,7 +180,8 @@ padding:12px 16px 16px;
 border-bottom:1px solid var(--line);
 }
 
-.control,.play{
+.control,
+.play{
 border:0;
 cursor:pointer;
 }
@@ -163,8 +209,17 @@ border-radius:50%;
 background:#fff;
 color:#111;
 font-size:20px;
+transition:
+transform .2s ease,
+box-shadow .2s ease;
 }
 
+.play:hover{
+transform:scale(1.04);
+box-shadow:0 0 24px rgba(255,255,255,.15);
+}
+
+/* LIBRARY */
 .library{
 padding:12px 16px 16px;
 }
@@ -218,22 +273,50 @@ font-size:12px;
 cursor:pointer;
 }
 
+.playlist:hover{
+background:rgba(255,255,255,.03);
+}
+
 .playlist.active{
 color:var(--accent);
 }
 
+/* ANIMATION */
 @keyframes pulse{
-0%,100%{opacity:.72}
-50%{opacity:1}
+0%,100%{
+opacity:.72;
+}
+
+50%{
+opacity:1;
+}
 }
 
 @media(prefers-reduced-motion:reduce){
-.label{animation:none}
+.label{
+animation:none;
+}
+
+.home-link,
+.play,
+.chevron,
+.playlist-wrap{
+transition:none;
+}
 }
 </style>
 </head>
 
 <body>
+
+<a
+class="home-link"
+href="https://vng.quest"
+aria-label="Return to VNG homepage"
+>
+<span class="home-arrow">←</span>
+<span>VNG</span>
+</a>
 
 <div class="refresh">
 <button id="refresh">Refresh ↻</button>
@@ -257,20 +340,48 @@ color:var(--accent);
 </div>
 
 <section class="controls">
-<button class="control" id="previous" aria-label="Previous video">◀</button>
-<button class="play" id="play" aria-label="Play">▶</button>
-<button class="control" id="next" aria-label="Next video">▶</button>
+<button
+class="control"
+id="previous"
+aria-label="Previous video"
+>
+◀
+</button>
+
+<button
+class="play"
+id="play"
+aria-label="Play"
+>
+▶
+</button>
+
+<button
+class="control"
+id="next"
+aria-label="Next video"
+>
+▶
+</button>
 </section>
 
 <section class="library">
-<button class="library-toggle" id="libraryToggle">
+
+<button
+class="library-toggle"
+id="libraryToggle"
+>
 <span>Playlists</span>
 <span class="chevron">⌄</span>
 </button>
 
-<div class="playlist-wrap" id="playlistWrap">
+<div
+class="playlist-wrap"
+id="playlistWrap"
+>
 <div id="playlistList"></div>
 </div>
+
 </section>
 
 </main>
@@ -293,46 +404,47 @@ color:var(--accent);
 </script>
 
 <script>
-const $=id=>document.getElementById(id);
+const $ = id => document.getElementById(id);
 
-const playlists=JSON.parse(
-$("playlistData").textContent
-).playlists.filter(p=>p.active);
+const playlists = JSON.parse(
+  $("playlistData").textContent
+).playlists.filter(p => p.active);
 
-const title=$("title");
-const trackName=$("trackName");
-const artistName=$("artistName");
-const playButton=$("play");
-const list=$("playlistList");
-const wrap=$("playlistWrap");
-const toggle=$("libraryToggle");
+const title = $("title");
+const trackName = $("trackName");
+const artistName = $("artistName");
+const playButton = $("play");
+const list = $("playlistList");
+const wrap = $("playlistWrap");
+const toggle = $("libraryToggle");
 
 let player;
-let ready=false;
-let current=0;
+let ready = false;
+let current = 0;
 let switchTimer;
 
-const now=new Date();
+const now = new Date();
 
-$("refreshed").textContent=
-"Last refreshed "+now.toLocaleString([],{
+$("refreshed").textContent =
+"Last refreshed " +
+now.toLocaleString([],{
 month:"short",
 day:"numeric",
 hour:"numeric",
 minute:"2-digit"
 });
 
-$("refresh").onclick=()=>location.reload();
+$("refresh").onclick = () => location.reload();
 
 function updateTrack(){
 if(!ready)return;
 
-const data=player.getVideoData();
+const data = player.getVideoData();
 
 if(!data?.title)return;
 
-trackName.textContent=data.title;
-artistName.textContent=data.author||"";
+trackName.textContent = data.title;
+artistName.textContent = data.author || "";
 }
 
 function updateActive(){
@@ -342,11 +454,12 @@ button.classList.toggle("active",index===current);
 }
 
 function switchPlaylist(index){
-if(!ready||index===current)return;
+if(!ready || index===current)return;
 
 clearTimeout(switchTimer);
 
 current=index;
+
 title.textContent=playlists[index].title;
 trackName.textContent="Loading...";
 artistName.textContent="";
@@ -364,6 +477,7 @@ index:0
 }
 
 playlists.forEach((playlist,index)=>{
+
 const button=document.createElement("button");
 
 button.className="playlist";
@@ -381,16 +495,20 @@ list.appendChild(button);
 updateActive();
 
 toggle.onclick=()=>{
+
 const open=wrap.classList.toggle("open");
+
 toggle.classList.toggle("open",open);
 };
 
 playButton.onclick=()=>{
+
 if(!ready)return;
 
 player.getPlayerState()===YT.PlayerState.PLAYING
-?player.pauseVideo()
-:player.playVideo();
+? player.pauseVideo()
+: player.playVideo();
+
 };
 
 $("previous").onclick=()=>{
@@ -402,13 +520,18 @@ if(ready)player.nextVideo();
 };
 
 function onYouTubeIframeAPIReady(){
+
 player=new YT.Player("player",{
+
 playerVars:{
 playsinline:1,
 rel:0
 },
+
 events:{
+
 onReady:event=>{
+
 ready=true;
 
 event.target.cuePlaylist({
@@ -416,26 +539,35 @@ listType:"playlist",
 list:playlists[0].id,
 index:0
 });
+
 },
 
 onStateChange:event=>{
-const playing=event.data===YT.PlayerState.PLAYING;
 
-playButton.textContent=playing?"Ⅱ":"▶";
+const playing=
+event.data===YT.PlayerState.PLAYING;
+
+playButton.textContent=
+playing ? "Ⅱ" : "▶";
+
 playButton.setAttribute(
 "aria-label",
-playing?"Pause":"Play"
+playing ? "Pause" : "Play"
 );
 
 if(
-event.data===YT.PlayerState.PLAYING||
+event.data===YT.PlayerState.PLAYING ||
 event.data===YT.PlayerState.CUED
 ){
 updateTrack();
 }
+
 }
+
 }
+
 });
+
 }
 </script>
 
